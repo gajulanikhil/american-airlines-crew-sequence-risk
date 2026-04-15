@@ -1,0 +1,243 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1rem 0;font-size:13px}
+.tabs{display:flex;gap:8px;margin-bottom:1.5rem}
+.tab{padding:6px 16px;border:0.5px solid var(--color-border-secondary);border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;color:var(--color-text-secondary);background:transparent;transition:all .15s}
+.tab.active{background:var(--color-background-tertiary);color:var(--color-text-primary);border-color:var(--color-border-primary)}
+.section{margin-bottom:1.5rem}
+.section-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-tertiary);margin-bottom:8px;padding-left:4px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-align:left;padding:6px 10px;border-bottom:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary)}
+td{padding:7px 10px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top;color:var(--color-text-primary);font-size:12px;line-height:1.5}
+tr:last-child td{border-bottom:none}
+.col-name{font-family:var(--font-mono);font-size:11px;color:var(--color-text-primary);font-weight:500}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
+.b-key{background:#E6F1FB;color:#0C447C}
+.b-flight{background:#E1F5EE;color:#085041}
+.b-dfw{background:#FAEEDA;color:#633806}
+.b-origin{background:#EEEDFE;color:#3C3489}
+.b-dest{background:#FAECE7;color:#712B13}
+.b-target{background:#FCEBEB;color:#791F1F}
+.b-time{background:#EAF3DE;color:#27500A}
+.null-hi{color:var(--color-text-warning)}
+.null-lo{color:var(--color-text-success)}
+th:nth-child(1){width:28%}
+th:nth-child(2){width:10%}
+th:nth-child(3){width:10%}
+th:nth-child(4){width:42%}
+th:nth-child(5){width:10%}
+.panel{display:none}.panel.active{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.2rem}
+</style>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="show('inb',this)">Inbound table</button>
+    <button class="tab" onclick="show('out',this)">Outbound table</button>
+  </div>
+
+  <div class="legend">
+    <span class="badge b-key">key</span>
+    <span class="badge b-time">temporal</span>
+    <span class="badge b-flight">flight metrics</span>
+    <span class="badge b-dfw">DFW weather</span>
+    <span class="badge b-origin">origin weather</span>
+    <span class="badge b-dest">dest weather</span>
+    <span class="badge b-target">target</span>
+  </div>
+
+  <div id="inb" class="panel active">
+
+    <div class="section">
+      <div class="section-label">Identifiers &amp; keys</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">airport_A</td><td>string</td><td class="null-lo">0</td><td>IATA code of origin airport (where the inbound flight departed from)</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">Date</td><td>date</td><td class="null-lo">0</td><td>Flight date (2025-01-01 to 2025-12-31)</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">dep_hour_A</td><td>float</td><td class="null-lo">0</td><td>Local hour (0–23) the flight departed airport A</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">arr_hour_DFW</td><td>float</td><td class="null-lo">0</td><td>Local hour (0–23) the flight arrived at DFW — used for weather join</td><td><span class="badge b-key">key</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Temporal features</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">month</td><td>int</td><td class="null-lo">0</td><td>Month number (1=Jan … 12=Dec)</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">weekday</td><td>int</td><td class="null-lo">0</td><td>Day of week (0=Mon … 6=Sun)</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">is_weekend</td><td>int</td><td class="null-lo">0</td><td>1 if Saturday or Sunday, else 0</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">season</td><td>string</td><td class="null-lo">0</td><td>winter / spring / summer / fall</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">is_spring</td><td>int</td><td class="null-lo">0</td><td>1 if March–May (DFW peak thunderstorm season), else 0</td><td><span class="badge b-time">temporal</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Flight performance metrics (from ASPM)</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">flight_count</td><td>float</td><td class="null-lo">0</td><td>Number of flights on this route at this hour</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">gate_dep_delay</td><td>float</td><td class="null-lo">0</td><td>Avg gate departure delay at airport A (mins) — how late the flight left the gate</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">apt_dep_delay</td><td>float</td><td class="null-lo">0</td><td>Avg airport departure delay (mins) — includes taxi queue time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">taxi_out_delay</td><td>float</td><td class="null-lo">0</td><td>Extra taxi-out time beyond the scheduled norm (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">avg_taxi_out</td><td>float</td><td class="null-lo">0</td><td>Actual average taxi-out time (mins) — includes scheduled + delay</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">airborne_delay</td><td>float</td><td class="null-lo">0</td><td>Extra time airborne beyond scheduled flight time (mins) — weather rerouting</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">taxi_in_delay</td><td>float</td><td class="null-lo">0</td><td>Extra taxi-in time at DFW beyond norm (mins) — gate congestion</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">block_delay</td><td>float</td><td class="null-lo">0</td><td>Total block (gate-to-gate) delay (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_gate_dep</td><td>float</td><td class="null-lo">0</td><td>% of flights on this slot that departed gate on time (≤0 min delay)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_apt_dep</td><td>float</td><td class="null-lo">0</td><td>% of flights that departed the airport on time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_gate_arr</td><td>float</td><td class="null-lo">0</td><td>% of flights that arrived at DFW gate on time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">edct_count</td><td>float</td><td class="null-lo">0</td><td>Number of arrivals issued an Expect Departure Clearance Time (ground stop)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">avg_edct_min</td><td>float</td><td class="null-lo">0</td><td>Avg EDCT delay in minutes (0 when no ground stop in effect)</td><td><span class="badge b-flight">flight</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">DFW weather at arrival hour</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">dfw_temp_f</td><td>float</td><td class="null-lo">939</td><td>Temperature at DFW (°F) — hourly mean</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_humidity_pct</td><td>float</td><td class="null-lo">939</td><td>Relative humidity at DFW (%) — hourly mean</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_wind_kts</td><td>float</td><td class="null-lo">1087</td><td>Wind speed at DFW (knots) — hourly mean</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_gust_kts</td><td>float</td><td class="null-hi">219k</td><td>Peak gust at DFW (knots) — high nulls: only reported when gusts occur</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_visibility_mi</td><td>float</td><td class="null-lo">939</td><td>Visibility at DFW (miles) — hourly mean. Below 3mi = significant IFR risk</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_ice_accretion</td><td>float</td><td class="null-hi">276k</td><td>Ice accretion in past hour (inches) — very rare, high nulls are expected</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_peak_gust_kts</td><td>float</td><td class="null-hi">250k</td><td>Peak wind gust recorded (knots) — only reported when significant</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_low_ceiling</td><td>float</td><td class="null-lo">939</td><td>1 if sky is BKN/OVC (broken or overcast) — instrument flight conditions</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_thunderstorm</td><td>float</td><td class="null-lo">939</td><td>1 if METAR wx code contains TS (thunderstorm) — highest delay driver</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_precipitation</td><td>float</td><td class="null-lo">939</td><td>1 if rain, snow, drizzle, shower, or hail present</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_freezing</td><td>float</td><td class="null-lo">939</td><td>1 if freezing conditions (FZ/GR/PL codes)</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Origin airport weather at departure hour (from phase 1c API fetch)</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">origin_temp_f</td><td>float</td><td>~3%</td><td>Temperature at airport A (°F) when flight departed</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_humidity_pct</td><td>float</td><td>~3%</td><td>Relative humidity at airport A (%) at departure hour</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_wind_kts</td><td>float</td><td>~3%</td><td>Wind speed at airport A (knots) at departure hour</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_gust_kts</td><td>float</td><td>high</td><td>Peak gust at airport A (knots) — null when no gusts</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_visibility_mi</td><td>float</td><td>~3%</td><td>Visibility at airport A (miles) — key feature for departure delay risk</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_ice_accretion</td><td>float</td><td>high</td><td>Ice accretion at airport A (inches/hr) — rare, high nulls expected</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_peak_gust_kts</td><td>float</td><td>high</td><td>Peak wind gust at airport A — only reported when significant</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_low_ceiling</td><td>float</td><td>~3%</td><td>1 if BKN/OVC ceiling at airport A — IFR conditions at origin</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_thunderstorm</td><td>float</td><td>~3%</td><td>1 if thunderstorm at airport A — primary cause of inbound delays</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_precipitation</td><td>float</td><td>~3%</td><td>1 if any precipitation at airport A</td><td><span class="badge b-origin">origin wx</span></td></tr>
+        <tr><td class="col-name">origin_freezing</td><td>float</td><td>~3%</td><td>1 if freezing conditions at airport A (deicing risk)</td><td><span class="badge b-origin">origin wx</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Target variables</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">gate_arr_delay</td><td>float</td><td class="null-lo">0</td><td>Actual gate arrival delay at DFW (mins). Use for regression — "how late will it be?"</td><td><span class="badge b-target">target</span></td></tr>
+        <tr><td class="col-name">delayed</td><td>int</td><td class="null-lo">0</td><td>1 if gate_arr_delay &gt; 0, else 0. Use for classification — "will it be delayed?"</td><td><span class="badge b-target">target</span></td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <div id="out" class="panel">
+
+    <div class="section">
+      <div class="section-label">Identifiers &amp; keys</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">airport_B</td><td>string</td><td class="null-lo">0</td><td>IATA code of destination airport (where the outbound flight is going)</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">Date</td><td>date</td><td class="null-lo">0</td><td>Flight date (2025-01-01 to 2025-12-31)</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">dep_hour_DFW</td><td>float</td><td class="null-lo">0</td><td>Local hour (0–23) the flight departed DFW — used for DFW weather join</td><td><span class="badge b-key">key</span></td></tr>
+        <tr><td class="col-name">arr_hour_B</td><td>float</td><td class="null-lo">0</td><td>Local hour (0–23) the flight arrived at airport B — used for dest weather join</td><td><span class="badge b-key">key</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Temporal features</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">month</td><td>int</td><td class="null-lo">0</td><td>Month number (1=Jan … 12=Dec)</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">weekday</td><td>int</td><td class="null-lo">0</td><td>Day of week (0=Mon … 6=Sun)</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">is_weekend</td><td>int</td><td class="null-lo">0</td><td>1 if Saturday or Sunday, else 0</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">season</td><td>string</td><td class="null-lo">0</td><td>winter / spring / summer / fall</td><td><span class="badge b-time">temporal</span></td></tr>
+        <tr><td class="col-name">is_spring</td><td>int</td><td class="null-lo">0</td><td>1 if March–May (DFW peak thunderstorm season), else 0</td><td><span class="badge b-time">temporal</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Flight performance metrics (from ASPM)</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">flight_count</td><td>float</td><td class="null-lo">0</td><td>Number of flights on this route at this hour</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">apt_dep_delay</td><td>float</td><td class="null-lo">0</td><td>Avg airport departure delay from DFW (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">taxi_out_delay</td><td>float</td><td class="null-lo">0</td><td>Extra taxi-out time at DFW beyond scheduled (mins) — runway queue</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">avg_taxi_out</td><td>float</td><td class="null-lo">0</td><td>Actual average taxi-out time from DFW (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">airborne_delay</td><td>float</td><td class="null-lo">0</td><td>Extra airborne time beyond scheduled (mins) — rerouting en route</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">taxi_in_delay</td><td>float</td><td class="null-lo">0</td><td>Extra taxi-in time at airport B (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">block_delay</td><td>float</td><td class="null-lo">0</td><td>Total gate-to-gate delay (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">gate_arr_delay</td><td>float</td><td class="null-lo">0</td><td>Avg gate arrival delay at airport B (mins)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_gate_dep</td><td>float</td><td class="null-lo">0</td><td>% of flights that departed DFW gate on time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_apt_dep</td><td>float</td><td class="null-lo">0</td><td>% of flights that departed DFW airport on time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">pct_ontime_gate_arr</td><td>float</td><td class="null-lo">0</td><td>% of flights that arrived at airport B gate on time</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">edct_count</td><td>float</td><td class="null-lo">0</td><td>Number of departures issued an EDCT (ground delay program)</td><td><span class="badge b-flight">flight</span></td></tr>
+        <tr><td class="col-name">avg_edct_min</td><td>float</td><td class="null-lo">0</td><td>Avg EDCT delay in minutes (0 when no ground stop)</td><td><span class="badge b-flight">flight</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">DFW weather at departure hour</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">dfw_temp_f</td><td>float</td><td class="null-lo">779</td><td>Temperature at DFW (°F) at the hour the flight pushed back</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_humidity_pct</td><td>float</td><td class="null-lo">779</td><td>Relative humidity at DFW (%) at departure hour</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_wind_kts</td><td>float</td><td class="null-lo">930</td><td>Wind speed at DFW (knots) at departure hour</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_gust_kts</td><td>float</td><td class="null-hi">229k</td><td>Peak gust at DFW (knots) — null when no gusts occurring</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_visibility_mi</td><td>float</td><td class="null-lo">779</td><td>Visibility at DFW (miles) — low values cause departure holds</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_ice_accretion</td><td>float</td><td class="null-hi">276k</td><td>Ice accretion at DFW (inches/hr) — rare, expected high nulls</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_peak_gust_kts</td><td>float</td><td class="null-hi">253k</td><td>Peak wind gust at DFW — only reported when significant</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_low_ceiling</td><td>float</td><td class="null-lo">779</td><td>1 if BKN/OVC ceiling at DFW — affects departure sequencing</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_thunderstorm</td><td>float</td><td class="null-lo">779</td><td>1 if thunderstorm at DFW at departure hour</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_precipitation</td><td>float</td><td class="null-lo">779</td><td>1 if any precipitation at DFW</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+        <tr><td class="col-name">dfw_freezing</td><td>float</td><td class="null-lo">779</td><td>1 if freezing conditions at DFW</td><td><span class="badge b-dfw">DFW wx</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Destination airport weather at arrival hour (from phase 1c API fetch)</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">dest_temp_f</td><td>float</td><td>~3%</td><td>Temperature at airport B (°F) when flight arrived</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_humidity_pct</td><td>float</td><td>~3%</td><td>Relative humidity at airport B (%) at arrival hour</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_wind_kts</td><td>float</td><td>~3%</td><td>Wind speed at airport B (knots) at arrival hour</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_gust_kts</td><td>float</td><td>high</td><td>Peak gust at airport B (knots) — null when no gusts</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_visibility_mi</td><td>float</td><td>~3%</td><td>Visibility at airport B (miles) — affects approach and landing</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_ice_accretion</td><td>float</td><td>high</td><td>Ice accretion at airport B (inches/hr) — rare, expected high nulls</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_peak_gust_kts</td><td>float</td><td>high</td><td>Peak wind gust at airport B — only reported when significant</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_low_ceiling</td><td>float</td><td>~3%</td><td>1 if BKN/OVC ceiling at airport B — instrument approach conditions</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_thunderstorm</td><td>float</td><td>~3%</td><td>1 if thunderstorm at airport B — arrival delay risk at destination</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_precipitation</td><td>float</td><td>~3%</td><td>1 if any precipitation at airport B</td><td><span class="badge b-dest">dest wx</span></td></tr>
+        <tr><td class="col-name">dest_freezing</td><td>float</td><td>~3%</td><td>1 if freezing conditions at airport B</td><td><span class="badge b-dest">dest wx</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Target variables</div>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Nulls</th><th>Description</th><th>Group</th></tr>
+        <tr><td class="col-name">gate_dep_delay</td><td>float</td><td class="null-lo">0</td><td>Actual gate departure delay from DFW (mins). Use for regression — "how late will it depart?"</td><td><span class="badge b-target">target</span></td></tr>
+        <tr><td class="col-name">delayed</td><td>int</td><td class="null-lo">0</td><td>1 if gate_dep_delay &gt; 0, else 0. Use for classification — "will it be delayed?"</td><td><span class="badge b-target">target</span></td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
