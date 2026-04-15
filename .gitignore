@@ -1,0 +1,46 @@
+# Data — never commit full datasets
+data/raw/*.csv
+data/raw/*.zip
+data/processed/*.csv
+data/processed/*.parquet
+
+# Keep sample data and gitkeep files
+!data/sample/
+!data/**/README.md
+!data/**/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Credentials — NEVER commit
+credentials.json
+*.key
+*.secret
+config/secrets.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model artifacts (large files)
+outputs/models/*.pkl
+outputs/models/*.bin
+
+# Logs
+*.log
+logs/
